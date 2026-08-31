@@ -1,0 +1,38 @@
+# Variant: existing Traefik (docker provider) on the shared external network ${PROXY_NETWORK}
+# usage: PROXY_NETWORK=proxy docker compose -f compose.yml -f compose.traefik.yml up -d
+services:
+  app:
+    networks: [internal, proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${PROXY_NETWORK:-proxy}
+      - traefik.http.routers.kb.rule=Host(`${SITE_HOST:-example.com}`) || Host(`www.${SITE_HOST:-example.com}`)
+      - traefik.http.routers.kb.entrypoints=websecure
+      - traefik.http.routers.kb.tls=true
+      - traefik.http.routers.kb.middlewares=kb-www
+      - traefik.http.services.kb.loadbalancer.server.port=3000
+      # Host-agnostic: strips a leading www. from whatever host matched.
+      - traefik.http.middlewares.kb-www.redirectregex.regex=^https://www\.(.*)
+      - traefik.http.middlewares.kb-www.redirectregex.replacement=https://$${1}
+      - traefik.http.middlewares.kb-www.redirectregex.permanent=true
+      - traefik.http.routers.kb-block.rule=Host(`${SITE_HOST:-example.com}`) && (PathPrefix(`/api/internal`) || PathPrefix(`/_next/image`))
+      - traefik.http.routers.kb-block.priority=100
+      - traefik.http.routers.kb-block.entrypoints=websecure
+      - traefik.http.routers.kb-block.tls=true
+      - traefik.http.routers.kb-block.middlewares=kb-deny
+      - traefik.http.routers.kb-block.service=kb
+      - traefik.http.middlewares.kb-deny.ipallowlist.sourcerange=127.0.0.1/32
+      - traefik.http.routers.kb-auth.rule=Host(`${SITE_HOST:-example.com}`) && PathPrefix(`/api/auth`)
+      - traefik.http.routers.kb-auth.priority=90
+      - traefik.http.routers.kb-auth.entrypoints=websecure
+      - traefik.http.routers.kb-auth.tls=true
+      - traefik.http.routers.kb-auth.middlewares=kb-auth-rl
+      - traefik.http.routers.kb-auth.service=kb
+      - traefik.http.middlewares.kb-auth-rl.ratelimit.average=10
+      - traefik.http.middlewares.kb-auth-rl.ratelimit.period=1m
+      - traefik.http.middlewares.kb-auth-rl.ratelimit.burst=10
+      - traefik.http.middlewares.kb-auth-rl.ratelimit.sourcecriterion.requestheadername=CF-Connecting-IP
+networks:
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:-proxy}

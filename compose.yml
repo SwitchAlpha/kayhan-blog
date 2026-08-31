@@ -1,0 +1,67 @@
+# Project name comes from COMPOSE_PROJECT_NAME in .env, else the directory name.
+# It determines the volume names, so never change it for a live deployment.
+services:
+  app:
+    image: ${IMAGE_NAME:-blog}:${IMAGE_TAG:-local}
+    build:
+      context: ./src
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+        NEXT_PUBLIC_ADSENSE_CLIENT: ${NEXT_PUBLIC_ADSENSE_CLIENT:-}
+        NEXT_PUBLIC_MEDIA_BASE: ${NEXT_PUBLIC_MEDIA_BASE:-}
+    env_file: .env
+    environment:
+      ROLE: app
+      UPLOADS_DIR: /data/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - uploads:/data/uploads
+    networks: [internal]
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 1g
+    pids_limit: 256
+    logging:
+      driver: json-file
+      options: { max-size: "20m", max-file: "5" }
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-blog}
+      POSTGRES_USER: kb
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_password
+      POSTGRES_INITDB_ARGS: "--locale=C.UTF-8 --encoding=UTF8"
+    secrets: [pg_password]
+    command:
+      - postgres
+      - -c
+      - shared_buffers=512MB
+      - -c
+      - work_mem=16MB
+      - -c
+      - max_connections=60
+      - -c
+      - log_min_duration_statement=500
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [internal]
+    restart: unless-stopped
+    shm_size: 256m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kb -d ${POSTGRES_DB:-blog}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 1500m
+networks:
+  internal: {}
+volumes:
+  pgdata: {}
+  uploads: {}
+secrets:
+  pg_password:
+    file: ./secrets/pg_password

@@ -1,0 +1,50 @@
+name: Bug report
+description: Something behaves differently than it should
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you got instead.
+      placeholder: |
+        I published a Turkish post and the English translation never appeared.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      placeholder: |
+        1. pnpm setup
+        2. Create a post in /admin/posts/new
+        3. Publish it
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Errors
+      description: >
+        Any error text, from the terminal or the browser console. Please remove
+        keys and passwords first — .env values often end up in log output.
+      render: shell
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Commit SHA or release tag, plus Node and Docker versions.
+      placeholder: "main @ abc1234 · Node 22.11 · Docker 27.3"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: "`pnpm test` passes on a clean checkout"
+        - label: I searched existing issues

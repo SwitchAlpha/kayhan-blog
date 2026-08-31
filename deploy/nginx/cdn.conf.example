@@ -1,0 +1,17 @@
+# /etc/nginx/sites-available/cdn.example.com — media CDN host (Cloudflare proxied). Only /uploads/* is served.
+server {
+    server_name cdn.example.com;
+    location ^~ /uploads/ {
+        proxy_pass http://127.0.0.1:3100;
+        proxy_http_version 1.1;
+        proxy_set_header Host example.com;
+        proxy_set_header X-Forwarded-Proto https;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        add_header Access-Control-Allow-Origin "https://example.com";
+        add_header X-Content-Type-Options nosniff;
+    }
+    location = /robots.txt { return 200 "User-agent: *\nDisallow: /\n"; add_header Content-Type text/plain; }
+    location / { return 404; }
+    listen 80;
+    listen [::]:80;
+}

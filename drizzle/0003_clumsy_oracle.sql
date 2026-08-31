@@ -1,0 +1,2 @@
+ALTER TABLE "account" ADD COLUMN "issuer" text DEFAULT 'better-auth' NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "account_issuer_accountId_uq" ON "account" USING btree ("issuer","account_id");

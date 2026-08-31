@@ -1,0 +1,5 @@
+# Variant: existing Nginx on the host proxies to 127.0.0.1:3100
+# usage: docker compose -f compose.yml -f compose.nginx.yml up -d
+services:
+  app:
+    ports: ["127.0.0.1:3100:3000"]
